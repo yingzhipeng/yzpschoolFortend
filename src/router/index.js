@@ -54,26 +54,98 @@ export const constantRoutes = [
       meta: { title: 'Dashboard', icon: 'dashboard' }
     }]
   },
-
+  /* 讲师列表*/
   {
-    path: '/example',
+    path: '/teacher',
     component: Layout,
-    redirect: '/example/table',
-    name: 'Example',
-    meta: { title: 'Example', icon: 'example' },
+    redirect: '/teacher/list',
+    name: 'teacher',
+    meta: { title: '讲师管理', icon: 'user' },
     children: [
       {
-        path: 'table',
-        name: 'Table',
-        component: () => import('@/views/table/index'),
-        meta: { title: 'Table', icon: 'table' }
+        path: 'list',
+        name: 'List',
+        component: () => import('@/views/teacher/list'),
+        meta: { title: '讲师列表', icon: 'table' }
       },
       {
-        path: 'tree',
-        name: 'Tree',
-        component: () => import('@/views/tree/index'),
-        meta: { title: 'Tree', icon: 'tree' }
-      }
+        path: 'save',
+        name: 'Save',
+        component: () => import('@/views/teacher/save'),
+        meta: { title: '添加讲师', icon: 'tree' }
+      },
+      {
+        path: 'update/:id',
+        name: 'Update',
+        component: () => import('@/views/teacher/save'),
+        meta: { title: '添加讲师', icon: 'tree' },
+        hidden:true
+      },
+    ]
+  },
+  /* 课程分类模块*/
+  {
+    path: '/subject',
+    component: Layout,
+    redirect: '/subject/list',
+    name: '课程分类管理',
+    meta: { title: '课程分类管理', icon: 'form' },
+    children: [
+      {
+        path: 'list',
+        name: '课程分类列表',
+        component: () => import('@/views/subject/list'),
+        meta: { title: '课程分类列表', icon: 'table' }
+      },
+      {
+        path: 'save',
+        name: '添加课程分类',
+        component: () => import('@/views/subject/save'),
+        meta: { title: '添加课程分类', icon: 'tree' }
+      },
+    ]
+  },
+  /* 课程管理模块*/
+  {
+    path: '/course',
+    component: Layout,
+    redirect: '/course/list',
+    name: '课程管理模块',
+    meta: { title: '课程管理模块', icon: 'nested' },
+    children: [
+      {
+        path: 'list',
+        name: '课程展示',
+        component: () => import('@/views/course/list'),
+        meta: { title: '课程展示', icon: 'table' }
+      },
+      {
+        path: 'save1',
+        name: '课程添加',
+        component: () => import('@/views/course/save1'),
+        meta: { title: '课程添加', icon: 'tree' },
+      },
+      {
+        path: 'save1/:id',
+        name: '课程添加1',
+        component: () => import('@/views/course/save1'),
+        meta: { title: '编辑课程基本信息', icon: 'tree' },
+        hidden:true
+      },
+      {
+        path: 'save2/:id',
+        name: '课程添加2',
+        component: () => import('@/views/course/save2'),
+        meta: { title: '编辑课程大纲', icon: 'tree' },
+        hidden:true
+      },
+      {
+        path: 'save3/:id',
+        name: '课程添加3',
+        component: () => import('@/views/course/save3'),
+        meta: { title: '发布课程', icon: 'tree' },
+        hidden:true
+      },
     ]
   },
 
