@@ -1,6 +1,7 @@
 <template>
   <div class="dashboard-container">
     <div class="dashboard-text" >你好: {{ name }}</div>
+    <!-- 轮播图开始-->
       <h3>首页轮播图展示：单击图片修改轮播内容</h3>
 
       <el-button type="primary" icon="el-icon-edit" @click="clickInsertButton"></el-button>
@@ -11,6 +12,8 @@
           <el-image :src="banner.imageUrl" @click="clickImage(banner)" style="width: 600px;height: 240px;"></el-image>
         </el-carousel-item>
       </el-carousel>
+     <!-- 轮播图结束-->
+     <!-- 弹窗开始-->
       <el-dialog :visible.sync="dialogChapterFormVisible">
           <el-form :model="url" label-width="120px">
             <el-upload
@@ -36,12 +39,77 @@
               <el-button type="primary" @click="saveOrUpdate">确 定</el-button>
           </div>
       </el-dialog>
+      <!-- 弹窗结束-->
+      <!-- 统计表单开始-->
+      <div class="app-container">
+        <!--表单-->
+        <el-form :inline="true" class="demo-form-inline">
+
+          <el-form-item label="日期">
+            <el-date-picker
+              v-model="day"
+              type="date"
+              placeholder="选择要统计的日期"
+              value-format="yyyy-MM-dd" />
+          </el-form-item>
+
+          <el-button
+            :disabled="btnDisabled"
+            type="primary"
+            @click="create()">立即统计数据（每天00:00会统计数据，您可以现在立即生成）</el-button>
+        </el-form>
+
+      </div>
+      <!-- 统计表单结束-->
+
+      <!-- 图表表单开始 -->
+      <div class="app-container">
+      <!--表单-->
+      <el-form :inline="true" class="demo-form-inline">
+
+        <el-form-item>
+          <el-select v-model="searchObj.type" clearable placeholder="请选择">
+            <el-option label="学员登录数统计" value="login_num"/>
+            <el-option label="学员注册数统计" value="register_num"/>
+            <el-option label="课程播放数统计" value="video_view_num"/>
+            <el-option label="每日课程数统计" value="course_num"/>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item>
+          <el-date-picker
+            v-model="searchObj.begin"
+            type="date"
+            placeholder="选择开始日期"
+            value-format="yyyy-MM-dd" />
+        </el-form-item>
+        <el-form-item>
+          <el-date-picker
+            v-model="searchObj.end"
+            type="date"
+            placeholder="选择截止日期"
+            value-format="yyyy-MM-dd" />
+        </el-form-item>
+        <el-button
+          :disabled="btnDisabled"
+          type="primary"
+          icon="el-icon-search"
+          @click="showChart()">查询</el-button>
+      </el-form>
+
+      <div class="chart-container">
+        <div id="chart" class="chart" style="height:500px;width:100%" />
+      </div>
+    </div>
+    <!-- 图表表单结束-->
   </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
 import banner from '@/api/banner/banner.js'
+import daily from '@/api/statistics/index.js'
+import echarts from 'echarts'
 export default {
   name: 'Dashboard',
   data() {
@@ -51,6 +119,19 @@ export default {
       banners: [],
       url:{},
       flag:true,//true表示修改，false表示添加
+      day: '',//代表日期
+      btnDisabled: false,//生成按钮是否可用
+
+      searchObj: {//表单数据
+        type: '',//查询类型
+        begin: '',//起始时间
+        end: ''//结束时间
+      },
+      btnDisabled2: false,  //查询按钮是否可用
+      chart: null,          //用来存储dom节点（Html标签）
+      title: '',            //图表标题
+      xData: [],            //x坐标轴数据，（我们项目x轴是时间）
+      yData: []             //y坐标轴数据，（我们项目y轴是统计数据）
     }
   },
   created() {
@@ -61,6 +142,115 @@ export default {
     init(){
       this.getBannerList();
     },
+/**========================================统计图表==============================================**/
+     /* 获取统计数据 */
+     create() {
+         this.btnDisabled = true
+         daily.createStatistics(this.day).then(response => {
+           this.btnDisabled = false
+           this.$message({
+             type: 'success',
+             message: '生成成功'
+           })
+         })
+       },
+
+     /* 点击查询按钮后，展示图表*/
+     showChart() {
+       this.initChartData()
+     },
+
+     // 准备图表数据
+     initChartData() {
+        daily.showChart(this.searchObj).then(response => {
+            // 数据
+            this.yData = response.data.dataList
+
+            // 横轴时间
+            this.xData = response.data.timeList
+
+            // 当前统计类别
+            switch (this.searchObj.type) {
+              case 'register_num':
+                this.title = '学员注册数统计'
+                break
+              case 'login_num':
+                this.title = '学员登录数统计'
+                break
+              case 'video_view_num':
+                this.title = '课程播放数统计'
+                break
+              case 'course_num':
+                this.title = '每日课程数统计'
+                break
+            }
+
+            this.setChart()
+          })
+     },
+
+     // 设置图标参数
+     setChart() {
+       // 基于准备好的dom，初始化echarts实例
+       this.chart = echarts.init(document.getElementById('chart'))
+       // console.log(this.chart)
+
+       // 指定图表的配置项和数据
+       var option = {
+         // x轴是类目轴（离散数据）,必须通过data设置类目数据
+         xAxis: {
+             type: 'category',
+             data: this.xData//-------绑定数据
+         },
+         // y轴是数据轴（连续数据）
+         yAxis: {
+             type: 'value'
+         },
+         // 系列列表。每个系列通过 type 决定自己的图表类型
+         series: [{
+             // 系列中的数据内容数组
+             data: this.yData,//-------绑定数据
+             // 折线图
+             type: 'line'
+         }],
+         title: {
+             text: this.title
+         },
+         tooltip: {
+             trigger: 'axis'
+         },
+         dataZoom: [{
+           show: true,
+           height: 30,
+           xAxisIndex: [
+             0
+           ],
+           bottom: 30,
+           start: 10,
+           end: 80,
+           handleIcon: 'path://M306.1,413c0,2.2-1.8,4-4,4h-59.8c-2.2,0-4-1.8-4-4V200.8c0-2.2,1.8-4,4-4h59.8c2.2,0,4,1.8,4,4V413z',
+           handleSize: '110%',
+           handleStyle: {
+             color: '#d3dee5'
+
+           },
+           textStyle: {
+             color: '#fff'
+           },
+           borderColor: '#90979c'
+         },
+         {
+           type: 'inside',
+           show: true,
+           height: 15,
+           start: 1,
+           end: 35
+         }],
+       }
+
+       this.chart.setOption(option)
+     },
+/**========================================轮播图=========================================**/
     /* 获取轮播图*/
     getBannerList(){
       banner.getBannerList()
